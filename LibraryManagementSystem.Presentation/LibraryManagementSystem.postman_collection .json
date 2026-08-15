@@ -1,0 +1,374 @@
+{
+  "info": {
+    "name": "Library Management System API",
+    "description": "Full testing flow: RBAC, borrowing/returning with optimistic concurrency, CRUD across all domains. Login credentials match seed_data.sql. NOTE: password '123123123' is confirmed for mahmoud (Administrator) — assumed the same for Tamer (Staff) and Ahmed (Librarian); update the Login requests below if theirs differ.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "adminToken", "value": "" },
+    { "key": "librarianToken", "value": "" },
+    { "key": "staffToken", "value": "" },
+    { "key": "publisherId", "value": "" },
+    { "key": "authorId", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "bookId", "value": "" },
+    { "key": "memberId", "value": "" },
+    { "key": "loanId", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Login as Admin (mahmoud)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.collectionVariables.set('adminToken', res.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', res.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mahmoud@gmail.com\",\n  \"password\": \"123123123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login as Librarian (Ahmed)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.collectionVariables.set('librarianToken', res.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"Ahmed@gmail.com\",\n  \"password\": \"123123123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login as Staff (Tamer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.collectionVariables.set('staffToken', res.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tamer@gmail.com\",\n  \"password\": \"123123123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. SystemUsers (Admin only)",
+      "item": [
+        {
+          "name": "Get All SystemUsers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/systemusers"
+          }
+        },
+        {
+          "name": "RBAC check - Librarian tries to create SystemUser (expect 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{librarianToken}}" }
+            ],
+            "url": "{{baseUrl}}/systemusers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Should Fail\",\n  \"email\": \"fail@library.com\",\n  \"password\": \"Fail@12345\",\n  \"roleType\": \"Staff\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Catalog Setup (Librarian)",
+      "item": [
+        {
+          "name": "Create Publisher",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.collectionVariables.set('publisherId', pm.response.json().id);"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{librarianToken}}" }
+            ],
+            "url": "{{baseUrl}}/publishers",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"O'Reilly Media\"\n}" }
+          }
+        },
+        {
+          "name": "Create Author",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.collectionVariables.set('authorId', pm.response.json().id);"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{librarianToken}}" }
+            ],
+            "url": "{{baseUrl}}/authors",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Robert C. Martin\",\n  \"bio\": null\n}" }
+          }
+        },
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.collectionVariables.set('categoryId', pm.response.json().id);"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{librarianToken}}" }
+            ],
+            "url": "{{baseUrl}}/categories",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Software Engineering\"\n}" }
+          }
+        },
+        {
+          "name": "Create Book (quantity 1 - for concurrency test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.collectionVariables.set('bookId', pm.response.json().id);"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{librarianToken}}" }
+            ],
+            "url": "{{baseUrl}}/books",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Clean Code\",\n  \"isbn\": \"9780132350884\",\n  \"publishYear\": 2008,\n  \"edition\": \"1st\",\n  \"language\": \"English\",\n  \"pageCount\": 464,\n  \"publisherId\": \"{{publisherId}}\",\n  \"quantity\": 1,\n  \"metadata\": null,\n  \"authorIds\": [\"{{authorId}}\"],\n  \"categoryIds\": [\"{{categoryId}}\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Book By Id (check AvailableCopies)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{librarianToken}}" }],
+            "url": "{{baseUrl}}/books/{{bookId}}"
+          }
+        },
+        {
+          "name": "Search/Paginate Books",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{staffToken}}" }],
+            "url": "{{baseUrl}}/books?search=clean&page=1&pageSize=10"
+          }
+        },
+        {
+          "name": "RBAC check - Staff tries to create Book (expect 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "url": "{{baseUrl}}/books",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Should Fail\",\n  \"quantity\": 1,\n  \"authorIds\": [],\n  \"categoryIds\": []\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Members",
+      "item": [
+        {
+          "name": "Create Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.collectionVariables.set('memberId', pm.response.json().id);"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{librarianToken}}" }
+            ],
+            "url": "{{baseUrl}}/members",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ahmed Youssef\",\n  \"email\": \"ahmed.youssef@example.com\",\n  \"phone\": \"01011112222\",\n  \"membershipStatus\": \"Active\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Loans (Borrow/Return)",
+      "item": [
+        {
+          "name": "Borrow Book",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.collectionVariables.set('loanId', pm.response.json().id);"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{librarianToken}}" }
+            ],
+            "url": "{{baseUrl}}/loans",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": \"{{bookId}}\",\n  \"memberId\": \"{{memberId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Concurrency Test - Borrow Same Book Again (expect 409 - no copies left)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{librarianToken}}" }
+            ],
+            "url": "{{baseUrl}}/loans",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": \"{{bookId}}\",\n  \"memberId\": \"{{memberId}}\"\n}"
+            }
+          },
+          "description": "Run this in parallel with 'Borrow Book' (e.g. via Apidog's batch/parallel runner) against a book with quantity=1 to actually exercise the RowVersion race condition. Run sequentially, it just proves the 0-availability check works."
+        },
+        {
+          "name": "Get Active Loans",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{staffToken}}" }],
+            "url": "{{baseUrl}}/loans/active"
+          }
+        },
+        {
+          "name": "Get Overdue Loans",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{staffToken}}" }],
+            "url": "{{baseUrl}}/loans/overdue"
+          }
+        },
+        {
+          "name": "Return Book",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{librarianToken}}" }],
+            "url": "{{baseUrl}}/loans/{{loanId}}/return"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Statistics",
+      "item": [
+        {
+          "name": "Get Dashboard Stats (Staff)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{staffToken}}" }],
+            "url": "{{baseUrl}}/statistics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Soft Delete Check",
+      "item": [
+        {
+          "name": "Delete Book",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{librarianToken}}" }],
+            "url": "{{baseUrl}}/books/{{bookId}}"
+          }
+        },
+        {
+          "name": "Get Deleted Book (expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{librarianToken}}" }],
+            "url": "{{baseUrl}}/books/{{bookId}}"
+          }
+        }
+      ]
+    }
+  ]
+}
