@@ -36,18 +36,14 @@ namespace LibraryManagementSystem.Infrastructure.Services
         {
             var book = await _bookRepo.GetBookAsyncWithAuthorsAndCategories(id);
             if (book is null) return null;
-           
-            var activeLoans = await _bookRepo.CountActiveLoansAsync(id);
-            return MapToDto(book, activeLoans);
+
+            return MapToDto(book);
         }
 
         public async Task<IEnumerable<BookDto>> GetAllAsync()
         {
             var books = await _bookRepo.GetAllAsync();
-            var dtos = new List<BookDto>();
-            foreach (var b in books)
-                dtos.Add(MapToDto(b, await _bookRepo.CountActiveLoansAsync(b.Id)));
-            return dtos;
+            return books.Select(MapToDto).ToList();
         }
 
         public async Task<PagedResultDto<BookDto>> SearchAsync(
@@ -55,13 +51,10 @@ namespace LibraryManagementSystem.Infrastructure.Services
         {
             var (items, totalCount) = await _bookRepo.SearchAsync(search, categoryId, page, pageSize);
 
-            var dtos = new List<BookDto>();
-            foreach (var b in items)
-                dtos.Add(MapToDto(b, await _bookRepo.CountActiveLoansAsync(b.Id)));
-
+           
             return new PagedResultDto<BookDto>
             {
-                Items = dtos,
+                Items = items.Select(MapToDto).ToList(),
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize
@@ -91,7 +84,7 @@ namespace LibraryManagementSystem.Infrastructure.Services
 
             await _bookRepo.AddAsync(book);
             await _unitOfWork.SaveChangesAsync();
-            return MapToDto(book, 0);
+            return MapToDto(book);
         }
 
         public async Task UpdateAsync(Guid id, UpdateBookDto dto)
@@ -107,9 +100,6 @@ namespace LibraryManagementSystem.Infrastructure.Services
             book.Language = dto.Language;
             book.PageCount = dto.PageCount;
             book.PublisherId = dto.PublisherId;
-            // NOTE: Quantity intentionally NOT updated here — it's owned by the
-            // borrow/return flow to keep the concurrency-safe path the single
-            // source of truth for that field.
             book.Metadata = Metadata;
             book.UpdatedAt = DateTime.UtcNow;
 
@@ -148,7 +138,7 @@ namespace LibraryManagementSystem.Infrastructure.Services
             }
         }
 
-        private static BookDto MapToDto(Book b, int activeLoans) => new()
+        private static BookDto MapToDto(Book b) => new()
         {
 
             Id = b.Id,

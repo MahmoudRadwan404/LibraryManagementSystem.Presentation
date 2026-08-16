@@ -22,10 +22,6 @@ namespace LibraryManagementSystem.Infrastructure.Repositories
         }
         public async Task<Book?> GetForBorrowAsync(Guid bookId) =>
             await _context.Set<Book>().SingleOrDefaultAsync(b => b.Id == bookId);
-
-        public async Task<int> CountActiveLoansAsync(Guid bookId) =>
-            await _context.Loans.CountAsync(l => l.BookId == bookId && l.Status == LoanStatus.Active);
-
         public async Task<(IEnumerable<Book> Items, int TotalCount)> SearchAsync(
             string? search, Guid? categoryId, int page, int pageSize)
         {
@@ -40,9 +36,6 @@ namespace LibraryManagementSystem.Infrastructure.Repositories
                     b.Title.Contains(search) ||
                     (b.Isbn != null && b.Isbn.Contains(search)) ||
                     b.Authors.Any(a => a.Name.Contains(search)));   
-
-            //if (!string.IsNullOrWhiteSpace(search))
-            //    query = query.Where(b => b.Title.Contains(search) || (b.Isbn != null && b.Isbn.Contains(search)));
 
             if (categoryId.HasValue)
                 query = query.Where(b => b.Categories.Any(c => c.Id == categoryId.Value));

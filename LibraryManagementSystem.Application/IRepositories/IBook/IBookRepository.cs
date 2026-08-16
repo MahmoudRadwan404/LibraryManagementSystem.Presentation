@@ -12,7 +12,6 @@ namespace LibraryManagementSystem.Application.IRepositories.IBook
     {
         public  Task<Book?> GetBookAsyncWithAuthorsAndCategories(Guid bookid);
         Task<Book?> GetForBorrowAsync(Guid bookId);
-        Task<int> CountActiveLoansAsync(Guid bookId);
         Task<(IEnumerable<Book> Items, int TotalCount)> SearchAsync(
             string? search, Guid? categoryId, int page, int pageSize);
     }
