@@ -8,7 +8,7 @@ A RESTful API for managing books, members, system users, and borrowing transacti
 
 ## API Testing Collection
 
-A ready-to-import Postman/Apidog collection is included at [`postman/LibraryManagementSystem.postman_collection.json`](LibraryManagementSystem.postman_collection.json). It covers the full flow — login for all three roles, RBAC checks, catalog setup, borrowing/returning (including the optimistic-concurrency conflict test), statistics, and soft delete — pre-filled with the credentials from the seed script below.
+A ready-to-import Postman/Apidog collection is included at [`LibraryManagementSystem.postman_collection.json`](LibraryManagementSystem.postman_collection.json). It covers the full flow — login for all three roles, RBAC checks, catalog setup, borrowing/returning (including the optimistic-concurrency conflict test), statistics, and soft delete — pre-filled with the credentials from the seed script below.
 
 ## Design Decisions
 
