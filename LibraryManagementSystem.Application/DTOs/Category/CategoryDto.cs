@@ -9,5 +9,6 @@ namespace LibraryManagementSystem.Application.DTOs.Category
     public class CategoryDto:CreateCategoryDto
     {
         public Guid Id { get; set; }
+        public List<CategoryDto> SubCategories { get; set; } = new();
     }
 }

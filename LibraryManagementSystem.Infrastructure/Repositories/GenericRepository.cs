@@ -20,7 +20,7 @@ namespace LibraryManagementSystem.Infrastructure.Repositories
 
         public async Task<T?> GetByIdAsync(Guid id) => await _context.Set<T>().FindAsync(id);
 
-        public async Task<IEnumerable<T>> GetAllAsync() => await _context.Set<T>().ToListAsync();
+        public virtual async Task<IEnumerable<T>> GetAllAsync() => await _context.Set<T>().ToListAsync();
 
         public async Task<T> AddAsync(T entity)
         {

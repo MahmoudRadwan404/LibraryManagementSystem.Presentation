@@ -9,6 +9,8 @@ namespace LibraryManagementSystem.Application.DTOs.Category
     public class CreateCategoryDto
     {
         public string Name { get; set; } = null!;
+        public Guid? ParentCategoryId { get; set; }
+
     }
 
 }

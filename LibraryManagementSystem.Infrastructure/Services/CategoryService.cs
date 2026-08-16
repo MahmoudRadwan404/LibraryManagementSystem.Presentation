@@ -15,15 +15,29 @@ public class CategoryService : GenericService<Category, CategoryDto, CreateCateg
         _categoryRepo = repo;
     }
 
-    protected override CategoryDto MapToDto(Category c) => new() { Id = c.Id, Name = c.Name };
+    protected override CategoryDto MapToDto(Category c) => new() { 
+        Id = c.Id,
+        Name = c.Name,
+        ParentCategoryId = c.ParentCategoryId,
+        SubCategories = c.SubCategories
+            .Select(MapToDto)
+            .ToList()
+    
+};
 
     protected override Category MapToEntity(CreateCategoryDto dto) => new()
     {
         Id = Guid.NewGuid(),
-        Name = dto.Name
+        Name = dto.Name,
+        ParentCategoryId = dto.ParentCategoryId
+
     };
 
-    protected override void ApplyUpdate(Category c, UpdateCategoryDto dto) => c.Name = dto.Name;
+    protected override void ApplyUpdate(Category c, UpdateCategoryDto dto)
+    {
+        c.Name = dto.Name;
+        c.ParentCategoryId = dto.ParentCategoryId;
+    }
 
     protected override void MarkDeleted(Category c) =>
         throw new InvalidOperationException("Category uses hard delete — see DeleteAsync override.");
@@ -35,5 +49,10 @@ public class CategoryService : GenericService<Category, CategoryDto, CreateCateg
 
         _categoryRepo.Delete(entity); // hard delete — Category has no IsDeleted column
         await _unitOfWork.SaveChangesAsync();
+    }
+    public override async Task<IEnumerable<CategoryDto>> GetAllAsync()
+    {
+        var categories = await _categoryRepo.GetTreeAsync();
+        return categories.Select(MapToDto);
     }
 }

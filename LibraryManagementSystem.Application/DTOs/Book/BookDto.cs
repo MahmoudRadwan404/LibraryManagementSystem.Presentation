@@ -18,7 +18,6 @@ namespace LibraryManagementSystem.Application.DTOs.Book
         public int? PageCount { get; set; }
         public Guid? PublisherId { get; set; }
         public int Quantity { get; set; }
-        public int AvailableCopies { get; set; }       // derived — quantity minus active loans
         public JsonElement? Metadata { get; set; }
         public List<string> AuthorNames { get; set; } = new();
         public List<string> CategoryNames { get; set; } = new();

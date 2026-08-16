@@ -28,7 +28,7 @@ public abstract class GenericService<TEntity, TDto, TCreateDto, TUpdateDto>
         return entity is null ? default : MapToDto(entity);
     }
 
-    public async Task<IEnumerable<TDto>> GetAllAsync()
+    public virtual async Task<IEnumerable<TDto>> GetAllAsync()
     {
         var entities = await _repo.GetAllAsync();
         return entities.Select(MapToDto);

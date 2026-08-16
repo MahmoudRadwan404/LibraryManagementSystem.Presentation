@@ -36,7 +36,13 @@ namespace LibraryManagementSystem.Infrastructure.Repositories
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
-                query = query.Where(b => b.Title.Contains(search) || (b.Isbn != null && b.Isbn.Contains(search)));
+                query = query.Where(b =>
+                    b.Title.Contains(search) ||
+                    (b.Isbn != null && b.Isbn.Contains(search)) ||
+                    b.Authors.Any(a => a.Name.Contains(search)));   
+
+            //if (!string.IsNullOrWhiteSpace(search))
+            //    query = query.Where(b => b.Title.Contains(search) || (b.Isbn != null && b.Isbn.Contains(search)));
 
             if (categoryId.HasValue)
                 query = query.Where(b => b.Categories.Any(c => c.Id == categoryId.Value));

@@ -8,5 +8,12 @@ using System.Threading.Tasks;
 
 namespace LibraryManagementSystem.Application.IRepositories.ICategory
 {
-    public interface ICategoryRepository : IGenericRepository<Category> { }
+    public interface ICategoryRepository : IGenericRepository<Category> { 
+        
+        
+        Task<IEnumerable<Category>> GetTreeAsync();
+        
+        }
+    
+    
 }

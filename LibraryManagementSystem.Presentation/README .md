@@ -8,13 +8,14 @@ A RESTful API for managing books, members, system users, and borrowing transacti
 
 ## API Testing Collection
 
-A ready-to-import Postman/Apidog collection is included at [LibraryManagementSystem.postman_collection.json](LibraryManagementSystem.postman_collection.json). It covers the full flow — login for all three roles, RBAC checks, catalog setup, borrowing/returning (including the optimistic-concurrency conflict test), statistics, and soft delete — pre-filled with the credentials from the seed script below.
+A ready-to-import Postman/Apidog collection is included at [`postman/LibraryManagementSystem.postman_collection.json`](LibraryManagementSystem.postman_collection.json). It covers the full flow — login for all three roles, RBAC checks, catalog setup, borrowing/returning (including the optimistic-concurrency conflict test), statistics, and soft delete — pre-filled with the credentials from the seed script below.
 
 ## Design Decisions
 
 ### Schema
 
 - **Three separate identity tables**: `SystemUser` (authenticates, has RBAC), `Member` (a data record — never logs in, staff act on their behalf), and `Author` (pure book metadata). Each has a distinct responsibility and lifecycle.
+- **`Category` supports hierarchical nesting** via a self-referencing `ParentCategoryId` foreign key, so categories can have subcategories (e.g. Web Development → Web APIs). `GET /api/categories` returns the full tree, with each category's `subCategories` populated recursively.
 - **Publisher is one-per-book**, via a plain `PublisherId` foreign key on `Book`, not a many-to-many junction. A library copy corresponds to one printed edition; different publishers of the same title are separate `Book` rows with their own ISBN/edition.
 - **Book availability is derived from `Quantity`**, adjusted directly during borrow/return. There is no separate `status`/`in-out` flag, so there's nothing that can drift out of sync with the actual loan data.
 - **`AuditLog` is scoped to `SystemUser` actions only**, satisfying the "user activity logging" requirement. Members never perform authenticated actions, so nothing about them is logged.
@@ -103,12 +104,13 @@ INSERT INTO Authors (Id, Name, Bio, CreatedAt, UpdatedAt, IsDeleted) VALUES
 -- CATEGORIES
 ------------------------------------------------------------
 
-INSERT INTO Categories (Id, Name) VALUES
-('11111111-bbbb-bbbb-bbbb-111111111111', 'Programming'),
-('22222222-bbbb-bbbb-bbbb-222222222222', 'Software Architecture'),
-('33333333-bbbb-bbbb-bbbb-333333333333', 'Database'),
-('44444444-bbbb-bbbb-bbbb-444444444444', 'Web Development'),
-('55555555-bbbb-bbbb-bbbb-555555555555', 'Computer Science');
+INSERT INTO Categories (Id, Name, ParentCategoryId) VALUES
+('11111111-bbbb-bbbb-bbbb-111111111111', 'Programming', NULL),
+('22222222-bbbb-bbbb-bbbb-222222222222', 'Software Architecture', NULL),
+('33333333-bbbb-bbbb-bbbb-333333333333', 'Database', NULL),
+('44444444-bbbb-bbbb-bbbb-444444444444', 'Web Development', NULL),
+('55555555-bbbb-bbbb-bbbb-555555555555', 'Computer Science', NULL),
+('66666666-bbbb-bbbb-bbbb-666666666666', 'Web APIs', '44444444-bbbb-bbbb-bbbb-444444444444'); -- child of "Web Development"
 
 ------------------------------------------------------------
 -- MEMBERS
@@ -272,8 +274,30 @@ Response:
 **`POST /api/categories`**
 ```json
 {
-  "name": "Software Engineering"
+  "name": "Web APIs",
+  "parentCategoryId": "44444444-bbbb-bbbb-bbbb-444444444444"
 }
+```
+
+**`GET /api/categories`** — returns the full tree; top-level categories with `subCategories` nested recursively.
+
+Response:
+```json
+[
+  {
+    "id": "44444444-bbbb-bbbb-bbbb-444444444444",
+    "name": "Web Development",
+    "parentCategoryId": null,
+    "subCategories": [
+      {
+        "id": "66666666-bbbb-bbbb-bbbb-666666666666",
+        "name": "Web APIs",
+        "parentCategoryId": "44444444-bbbb-bbbb-bbbb-444444444444",
+        "subCategories": []
+      }
+    ]
+  }
+]
 ```
 
 ### Books
@@ -300,6 +324,8 @@ Response:
 ```
 
 **`GET /api/books?search=clean&categoryId=11111111-bbbb-bbbb-bbbb-111111111111&page=1&pageSize=20`**
+
+`search` matches against title, ISBN, and author name (e.g. `?search=Martin` returns books written by Robert C. Martin even if his name doesn't appear in the title).
 
 Response:
 ```json

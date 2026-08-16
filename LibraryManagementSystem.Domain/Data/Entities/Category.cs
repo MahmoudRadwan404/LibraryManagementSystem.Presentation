@@ -10,7 +10,11 @@ namespace LibraryManagementSystem.Domain.Data.Entities
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
+            public Guid? ParentCategoryId { get; set; }      
+            public Category? ParentCategory { get; set; }
 
+            public ICollection<Category> ?SubCategories { get; set; } = new List<Category>();  // reverse nav, no extra column
+        
         public ICollection<Book>? Books { get; set; } = new List<Book>();
     }
 }

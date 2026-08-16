@@ -160,7 +160,6 @@ namespace LibraryManagementSystem.Infrastructure.Services
             PageCount = b.PageCount,
             PublisherId = b.PublisherId,
             Quantity = b.Quantity,
-            AvailableCopies = b.Quantity - activeLoans,
             Metadata =string.IsNullOrEmpty(b.Metadata)
         ? null
         : JsonDocument.Parse(b.Metadata).RootElement,
